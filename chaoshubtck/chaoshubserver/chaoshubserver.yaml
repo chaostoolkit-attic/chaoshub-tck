@@ -1,0 +1,40 @@
+swagger: '2.0'
+info:
+  title: Chaos Hub API
+  version: "0.1.0"
+  description: Chaos Hub ServerTCK
+paths:
+  /{organisation}/{workspace}:
+    put:
+      tags: [Experiments]
+      operationId: servertck.put_experiment
+      summary: Create or update an experiment and its runtime findings
+      consumes:
+        - application/json
+      parameters:
+      - name: organisation
+        in: "path"
+        description: "Organisation"
+        required: true
+        type: "string"
+      - name: workspace
+        in: "path"
+        description: "Workspace"
+        required: true
+        type: "string"
+      - name: CHAOSHUB-TOKEN
+        in: "header"
+        required: true
+        type: "string"
+      - in: body
+        name: journal
+        required: true
+        schema:
+          type: object
+      responses:
+        405:
+          description: "Invalid input"
+        200:
+          description: Experiment updated
+        201:
+          description: New experiment created

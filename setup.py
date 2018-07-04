@@ -6,8 +6,9 @@ import io
 
 import setuptools
 
-sys.path.insert(0, ".")
 from chaoshubtck import __version__
+
+sys.path.insert(0, ".")
 sys.path.remove(".")
 
 name = 'chaostoolkit-chaoshubtck'
