@@ -1,0 +1,163 @@
+{
+  "chaoslib-version": "0.18.0",
+  "platform": "Darwin-17.6.0-x86_64-i386-64bit",
+  "node": "Bertrand.local",
+  "experiment": {
+    "version": "1.0.0",
+    "title": "Setting and triggering service dependency death",
+    "description": "Uses the Spring Chaos Monkey to manipulate a service",
+    "tags": [
+      "service",
+      "spring"
+    ],
+    "extensions": [
+      {
+        "vendor": "chaoshub",
+        "contributions": [
+          {
+            "name": "resiliency",
+            "ratio": 100
+          },
+          {
+            "name": "security",
+            "ratio": 50
+          },
+          {
+            "name": "level",
+            "ratio": 1
+          }
+        ]
+      },
+      {
+        "vendor": "microsoft",
+        "responsible_team": ".Net Core"
+      }
+    ],
+    "steady-state-hypothesis": {
+      "probes": [
+        {
+          "name": "consumer-service-must-still-respond",
+          "provider": {
+            "type": "http",
+            "url": "http://localhost:8080/invokeConsumedService"
+          },
+          "tolerance": 200,
+          "type": "probe"
+        }
+      ],
+      "title": "System is healthy"
+    },
+    "method": [
+      {
+        "name": "enable_chaosmonkey",
+        "provider": {
+          "arguments": {
+            "base_url": "http://localhost:8090/actuator"
+          },
+          "func": "enable_chaosmonkey",
+          "module": "chaosspring.actions",
+          "type": "python"
+        },
+        "type": "action"
+      },
+      {
+        "name": "configure_assaults",
+        "provider": {
+          "arguments": {
+            "base_url": "http://localhost:8090/actuator",
+            "assaults_configuration": {
+              "level": 1,
+              "latencyRangeStart": 2000,
+              "latencyRangeEnd": 5000,
+              "latencyActive": false,
+              "exceptionsActive": false,
+              "killApplicationActive": true,
+              "restartApplicationActive": false
+            }
+          },
+          "func": "change_assaults_configuration",
+          "module": "chaosspring.actions",
+          "type": "python"
+        },
+        "type": "action"
+      },
+      {
+        "name": "trigger-kill",
+        "provider": {
+          "type": "http",
+          "url": "http://localhost:8080/"
+        },
+        "type": "probe"
+      }
+    ],
+    "rollbacks": [],
+    "dry": false
+  },
+  "start": "2018-07-03T10:44:57.425490",
+  "status": "failed",
+  "steady_states": {
+    "before": {
+      "steady_state_met": false,
+      "probes": [
+        {
+          "activity": {
+            "name": "consumer-service-must-still-respond",
+            "provider": {
+              "type": "http",
+              "url": "http://localhost:8080/invokeConsumedService"
+            },
+            "tolerance": 200,
+            "type": "probe"
+          },
+          "output": null,
+          "status": "failed",
+          "exception": [
+            "Traceback (most recent call last):\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connection.py\", line 141, in _new_conn\n    (self.host, self.port), self.timeout, **extra_kw)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/util/connection.py\", line 83, in create_connection\n    raise err\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/util/connection.py\", line 73, in create_connection\n    sock.connect(sa)\n",
+            "ConnectionRefusedError: [Errno 61] Connection refused\n",
+            "\nDuring handling of the above exception, another exception occurred:\n\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connectionpool.py\", line 601, in urlopen\n    chunked=chunked)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connectionpool.py\", line 357, in _make_request\n    conn.request(method, url, **httplib_request_kw)\n",
+            "  File \"/usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py\", line 1239, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n",
+            "  File \"/usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py\", line 1285, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n",
+            "  File \"/usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py\", line 1234, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n",
+            "  File \"/usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py\", line 1026, in _send_output\n    self.send(msg)\n",
+            "  File \"/usr/local/Cellar/python3/3.6.4_2/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py\", line 964, in send\n    self.connect()\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connection.py\", line 166, in connect\n    conn = self._new_conn()\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connection.py\", line 150, in _new_conn\n    self, \"Failed to establish a new connection: %s\" % e)\n",
+            "urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x1151ad668>: Failed to establish a new connection: [Errno 61] Connection refused\n",
+            "\nDuring handling of the above exception, another exception occurred:\n\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/adapters.py\", line 440, in send\n    timeout=timeout\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/connectionpool.py\", line 639, in urlopen\n    _stacktrace=sys.exc_info()[2])\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/urllib3/util/retry.py\", line 388, in increment\n    raise MaxRetryError(_pool, url, error or ResponseError(cause))\n",
+            "urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /invokeConsumedService (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1151ad668>: Failed to establish a new connection: [Errno 61] Connection refused',))\n",
+            "\nDuring handling of the above exception, another exception occurred:\n\n",
+            "Traceback (most recent call last):\n",
+            "  File \"/Users/russellmiles/code/src/github.com/chaostoolkit/chaostoolkit-lib/chaoslib/provider/http.py\", line 51, in run_http_activity\n    verify=verify_tls)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/api.py\", line 72, in get\n    return request('get', url, params=params, **kwargs)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/api.py\", line 58, in request\n    return session.request(method=method, url=url, **kwargs)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/sessions.py\", line 508, in request\n    resp = self.send(prep, **send_kwargs)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/sessions.py\", line 618, in send\n    r = adapter.send(request, **kwargs)\n",
+            "  File \"/Users/russellmiles/.venvs/chaostk/lib/python3.6/site-packages/requests/adapters.py\", line 508, in send\n    raise ConnectionError(e, request=request)\n",
+            "requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /invokeConsumedService (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1151ad668>: Failed to establish a new connection: [Errno 61] Connection refused',))\n",
+            "\nDuring handling of the above exception, another exception occurred:\n\n",
+            "chaoslib.exceptions.FailedActivity: failed to connect to http://localhost:8080/invokeConsumedService: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /invokeConsumedService (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1151ad668>: Failed to establish a new connection: [Errno 61] Connection refused',))\n"
+          ],
+          "start": "2018-07-03T10:44:57.426649",
+          "end": "2018-07-03T10:44:57.434923",
+          "duration": 0.008274,
+          "tolerance_met": false
+        }
+      ]
+    },
+    "after": null
+  },
+  "run": [],
+  "rollbacks": [],
+  "end": "2018-07-03T10:44:57.435391",
+  "duration": 0.01900005340576172
+}
