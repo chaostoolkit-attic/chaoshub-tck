@@ -12,8 +12,9 @@ def put_experiment(organisation, workspace):
         org=organisation, ws=workspace
     ))
 
-    token = connexion.request.headers["CHAOSHUB-TOKEN"]
-    print("Supplied user token was {token}".format(token=token))
+    bearer_token = connexion.request.headers["Authorization"]
+    print("Supplied user bearer token was {token}".format(
+        token=bearer_token))
 
     journal = connexion.request.json
     print("Supplied journal was {journal}".format(journal=journal))

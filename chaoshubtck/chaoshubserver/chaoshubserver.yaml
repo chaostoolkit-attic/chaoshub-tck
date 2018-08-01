@@ -22,7 +22,7 @@ paths:
         description: "Workspace"
         required: true
         type: "string"
-      - name: CHAOSHUB-TOKEN
+      - name: Authorization
         in: "header"
         required: true
         type: "string"
