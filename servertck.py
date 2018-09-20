@@ -1,9 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import connexion
 import logging
+from typing import Any, Dict, Union
 
+import connexion
 from connexion import NoContent
+
+
+def signup_local(user: Dict[str, str]) -> Union[object, int]:
+    return NoContent, 201
+
+
+def signin_local(user: Dict[str, str]) -> Union[object, int]:
+    return NoContent, 201
+
+
+def authorize_signin_with_oauth2(user: Dict[str, str]) -> Union[object, int]:
+    return NoContent, 201
+
+
+def authorize_signup_with_oauth2(user: Dict[str, str]) -> Union[object, int]:
+    return NoContent, 201
+
+
+def allowed_via_oauth2(user: Dict[str, str]) -> Union[object, int]:
+    return NoContent, 201
 
 
 def put_experiment(organisation, workspace):
@@ -22,6 +43,46 @@ def put_experiment(organisation, workspace):
     return NoContent, 200
 
 
+def get_account_profile():
+    pass
+
+
+def post_account_profile():
+    pass
+
+
+def get_account_tokens():
+    pass
+
+
+def post_account_token():
+    pass
+
+def delete_account_token():
+    pass
+
+def get_account_orgs():
+    pass
+
+
+def post_account_org():
+    pass
+
+
+def get_account_workspaces():
+    pass
+
+
+def post_account_workspace():
+    pass
+
+
+def create_organization(name: str, email: str = "", url: str = "",
+                        avatar_url: str = "") -> Union[Dict[str, Any], int]:
+    return {}, 200
+    
+
+
 logging.basicConfig(level=logging.INFO)
 app = connexion.App(__name__, specification_dir='chaoshubtck/chaoshubserver/')
 app.add_api('chaoshubserver.yaml')
@@ -31,4 +92,4 @@ application = app.app
 
 if __name__ == '__main__':
     # run our standalone gevent server
-    app.run(port=8080, server='gevent')
+    app.run(port=8081, server='gevent')

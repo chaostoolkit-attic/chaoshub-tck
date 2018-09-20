@@ -1,40 +1,1619 @@
-swagger: '2.0'
-info:
-  title: Chaos Hub API
-  version: "0.1.0"
-  description: Chaos Hub ServerTCK
-paths:
-  /{organisation}/{workspace}:
-    put:
-      tags: [Experiments]
-      operationId: servertck.put_experiment
-      summary: Create or update an experiment and its runtime findings
-      consumes:
-        - application/json
-      parameters:
-      - name: organisation
-        in: "path"
-        description: "Organisation"
-        required: true
-        type: "string"
-      - name: workspace
-        in: "path"
-        description: "Workspace"
-        required: true
-        type: "string"
-      - name: Authorization
-        in: "header"
-        required: true
-        type: "string"
-      - in: body
-        name: journal
-        required: true
-        schema:
+  swagger: '2.0'
+  info:
+    title: Chaos Hub API
+    version: "0.2.0"
+    description: |
+      This OpenAPI is the public HTTP API of the Chaos Hub control plane.
+      Currently it is meant to handle the basic resources exposed by the Chaos
+      Hub. These are users, organizations and their workspaces. Then,
+      experiments and their executions, as well as schedules of executions.
+      Finally, the API provides an interface to create user accounts, either
+      via a simple username/password scheme or through OAuth2 providers.
+
+      In this version, the API is rudimentary and likely missing pieces to
+      turn into a fully capable control plane for Chaos Engineering. It is
+      expected this will be amended quite a lot.
+      
+      If you are interested, please contribute to the discussion on the
+      issue at https://github.com/chaostoolkit/chaoshub/issues/15
+
+  paths:
+    /auth/signup/local:
+      post:
+        tags:
+        - Auth
+        operationId: servertck.signup_local
+        summary: Signup with a local account made of a username/password pair
+        consumes:
+          - application/json
+        parameters:
+          - in: body
+            name: user
+            description: The user details
+            schema:
+              $ref: "#/definitions/User"
+        responses:
+          400:
+            description: Missing username or password
+          409:
+            description: Username unavailable
+          201:
+            description: Registered
+    /auth/signin/local:
+      post:
+        tags:
+        - Auth
+        operationId: servertck.signin_local
+        summary: Signin with a local account made of a username/password pair
+        consumes:
+          - application/json
+        parameters:
+          - in: body
+            name: user
+            description: The user details
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+        responses:
+          400:
+            description: Missing username or password
+          200:
+            description: Logged in
+    /auth/signup/with/{provider}:
+      get:
+        tags:
+        - Auth
+        operationId: servertck.authorize_signup_with_oauth2
+        summary: Signup via an Oauth2 provider
+        description: |
+          Redirect the user to the given OAuth2 provider with a state in the
+          query-string of the redirected URL which indicates which flow the
+          request originates from, in this case `"signup"`. If the provider
+          supports OpenID connect, the state also contains a `"nonce"`.
+        parameters:
+          - name: provider
+            in: "path"
+            description: "OAuth2 provider"
+            required: true
+            type: "string"
+        responses:
+          302:
+            description: ""
+            headers:
+              Location:
+                type: "string"
+    /auth/signin/with/{provider}:
+      get:
+        tags:
+        - Auth
+        operationId: servertck.authorize_signin_with_oauth2
+        summary: Signin via an Oauth2 provider
+        description: |
+          Redirect the user to the given OAuth2 provider with a state in the
+          query-string of the redirected URL which indicates which flow the
+          request originates from, in this case `"signin"`. If the provider
+          supports OpenID connect, the state also contains a `"nonce"`.
+        parameters:
+          - name: provider
+            in: "path"
+            description: "OAuth2 provider"
+            required: true
+            type: "string"
+        responses:
+          302:
+            description: ""
+            headers:
+              Location:
+                type: "string"
+    /auth/allowed/with/{provider}:
+      get:
+        tags:
+        - Auth
+        operationId: servertck.allowed_via_oauth2
+        summary: Allowed signin from the OAuth2 provider
+        parameters:
+          - name: provider
+            in: "path"
+            description: "OAuth2 provider"
+            required: true
+            type: "string"
+          - name: state
+            in: query
+            description: |
+              The signed state of the OAuth2 exchange. Notably, a `via`
+              property which must be `"signup"` or `"signin"`. Each indicating
+              where the redirection comes from.
+            required: true
+            type: "string"
+            format: binary
+        responses:
+          303:
+            description: ""
+            headers:
+              Location:
+                type: "string"
+                default: "/"
+    /user/profile:
+      get:
+        tags:
+        - Profile
+        operationId: servertck.get_account_profile
+        summary: The user's Profile
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+        responses:
+          200:
+            description: "The user's profile"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+      post:
+        tags:
+        - Profile
+        operationId: servertck.post_account_profile
+        summary: Set the user's profile
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: body
+            name: profile
+            description: The user profile
+            schema:
+              $ref: "#/definitions/UserProfile"
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in or email already used"
+          404:
+            description: "Unknown user"
+
+    /user/tokens:
+      get:
+        tags:
+        - Access Token
+        operationId: servertck.get_user_tokens
+        summary: The user's access tokens
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+        responses:
+          200:
+            description: "The user's tokens"
+            schema:
+              $ref: "#/definitions/AccessTokens"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+      post:
+        tags:
+        - Access Token
+        operationId: servertck.post_user_token
+        summary: Generate a new access token
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: body
+            name: token
+            required: true
+            description: The access token's name
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in or email already used"
+          404:
+            description: "Unknown user"
+    /user/tokens/{token_id}:
+      delete:
+        tags:
+        - Access Token
+        operationId: servertck.delete_user_token
+        summary: Revoke a new access token
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: token_id
+            description: The token's identifier
+            required: true
+            type: string
+            format: uuid
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+
+    /organizations:
+      get:
+        tags:
+        - Organization
+        operationId: servertck.get_user_orgs
+        summary: The organizations the user owns or is a member of
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+        responses:
+          200:
+            description: "The user's organizations"
+            schema:
+              $ref: "#/definitions/Organizations"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+      post:
+        tags:
+        - Organization
+        operationId: servertck.post_user_org
+        summary: Create a new collaborative organization
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: body
+            name: info
+            required: true
+            description: The organization's information
+            schema:
+              type: object
+              required:
+                - name
+                - settings
+              properties:
+                name:
+                  type: string
+                settings:
+                  $ref: "#/definitions/OrganizationSettings"
+        responses:
+          201:
+            description: "The new organization"
+            schema:
+              $ref: "#/definitions/Organization"
+          400:
+            description: "Not signed-in or name already used"
+          404:
+            description: "Unknown user"
+    /{organization}:
+      delete:
+        tags:
+        - Organization
+        operationId: servertck.delete_user_org
+        summary: Delete a collaborative organization
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+
+    /{organization}/members:
+      get:
+        tags:
+        - Organization
+        operationId: servertck.get_org_members
+        summary: List the organization's members
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+
+        responses:
+          200:
+            description: "The organization members information"
+            schema:
+              $ref: "#/definitions/Users"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+      post:
+        tags:
+        - Organization
+        operationId: servertck.add_org_member
+        summary: Add a new member to an organization
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: body
+            name: user
+            required: true
+            description: User's identifier
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+        responses:
+          200:
+            description: "The organization member information"
+            schema:
+              $ref: "#/definitions/User"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+    /{organization}/members/{user_id}:
+      delete:
+        tags:
+        - Organization
+        operationId: servertck.delete_org_member
+        summary: Deete a member from an organization
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: user_id
+            required: true
+            description: The user's identifier
+            type: string
+            format: uuid
+        responses:
+          200:
+            description: "The organization member information"
+            schema:
+              $ref: "#/definitions/User"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+      patch:
+        tags:
+        - Organization
+        operationId: servertck.patch_org_membership
+        summary: Patch a member's membership for this workspace (owner/collaborator)
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: user_id
+            required: true
+            description: The user's identifier
+            type: string
+            format: uuid
+          - in: body
+            name: is_owner
+            required: true
+            description: Turn user from/to an owner
+            schema:
+              type: object
+              properties:
+                workspace_owner:
+                  type: boolean
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization"
+
+
+    /{organization}/workspaces:
+      get:
+        tags:
+        - Workspace
+        operationId: servertck.get_user_workspaces
+        summary: The workspaces the user owns or is a collaborator of
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+        responses:
+          200:
+            description: "The user's workspaces"
+            schema:
+              $ref: "#/definitions/Workspaces"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+      post:
+        tags:
+        - Workspace
+        operationId: servertck.post_user_workspace
+        summary: Create a new workspace in an organization
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: body
+            name: info
+            required: true
+            description: The workspace's information
+            schema:
+              type: object
+              required:
+                - name
+                - org
+              properties:
+                name:
+                  type: string
+                org:
+                  type: string
+                  description: the organization id this workspace belongs to
+                  format: uuid
+                visibility:
+                  $ref: "#/definitions/ActivityVisibility"
+        responses:
+          201:
+            description: "The new workspace"
+            schema:
+              $ref: "#/definitions/Workspace"
+          400:
+            description: "Not signed-in or name already used"
+          404:
+            description: "Unknown user"
+
+    /experiments:
+      get:
+        tags: 
+        - Experiments
+        operationId: servertck.get_user_experiments
+        summary: List experiments
+        produces:
+          - application/json
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - in: query
+          name: organization
+          required: false
+          description: Restrict experiments to this sole organization
+          type: string
+        - in: query
+          name: workspace
+          required: false
+          description: Restrict experiments to this sole workspace
+          type: string
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: OK
+            schema:
+              $ref: "#/definitions/Experiments"
+      post:
+        tags: 
+        - Experiments
+        operationId: servertck.upload_experiment
+        summary: Create an experiment
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+        - name: organization
+          in: "path"
+          description: "organization"
+          required: true
+          type: "string"
+        - name: workspace
+          in: "path"
+          description: "Workspace"
+          required: true
+          type: "string"
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Experiment"
+        responses:
+          400:
+            description: "Invalid input"
+          201:
+            description: New experiment created
+            schema:
+              $ref: "#/definitions/Experiment"
+            headers:
+              Location:
+                type: "string"
+
+    /experiments/{experiment}:
+      get:
+        tags: 
+        - Experiments
+        operationId: servertck.get_experiment
+        summary: Get an experiment
+        consumes:
+          - application/json
+        parameters:
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: OK
+            schema:
+              $ref: "#/definitions/Experiment"
+      put:
+        tags: 
+        - Experiments
+        operationId: servertck.set_experiment
+        summary: Update an experiment
+        consumes:
+          - application/json
+        parameters:
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: definition
+          in: "body"
+          description: "Experiment definition"
+          required: true
+          schema:
+            $ref: "#/definitions/Experiment"
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: Experiment updated
+            schema:
+              $ref: "#/definitions/Experiment"
+            headers:
+              Location:
+                type: "string"
+
+    /experiments/{experiment}/executions:
+      get:
+        tags: 
+        - Execution
+        operationId: servertck.get_executions
+        summary: List all experiment's executions
+        produces:
+          - application/json
+        parameters:
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: OK
+            schema:
+              $ref: "#/definitions/Executions"
+      post:
+        tags: 
+        - Execution
+        operationId: servertck.upload_execution
+        summary: Upload an experiment's journal
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        responses:
+          400:
+            description: "Invalid input"
+          201:
+            description: New execution created
+            schema:
+              $ref: "#/definitions/Execution"
+
+    /experiments/{experiment}/executions/{execution}:
+      get:
+        tags: 
+        - Execution
+        operationId: servertck.get_execution
+        summary: Get an experiment's execution
+        produces:
+          - application/json
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: execution
+          in: "path"
+          description: "Execution identifier"
+          required: true
+          type: "string"
+          format: uuid
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: OK
+            schema:
+              $ref: "#/definitions/Execution"
+      delete:
+        tags: 
+        - Execution
+        operationId: servertck.delete_execution
+        summary: Delete an execution
+        parameters:
+        - name: execution
+          in: "path"
+          description: "Execution identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        responses:
+          400:
+            description: "Invalid input"
+          204:
+            description: ""
+
+    /experiments/{experiment}/schedules:
+      get:
+        tags: 
+        - Schedule
+        operationId: servertck.get_schedules
+        summary: List all current schedules
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: All schedules
+            schema:
+              $ref: "#/definitions/Schedules"
+      post:
+        tags: 
+        - Schedule
+        operationId: servertck.schedule_execution
+        summary: Schedule and experiment's execution
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: scheduling
+          in: body
+          description: The scheduling information
+          required: true
+          schema:
+            type: object
+            properties:
+              scheduler:
+                type: string
+                format: uuid
+              token:
+                type: string
+                format: uuid
+              when:
+                type: string
+                format: date-time
+        responses:
+          400:
+            description: "Invalid input"
+          201:
+            description: New schedule created
+            schema:
+              $ref: "#/definitions/Schedule"
+
+    /experiments/{experiment}/schedules/{schedule}:
+      get:
+        tags: 
+        - Schedule
+        operationId: servertck.get_schedule
+        summary: Get a schedule
+        produces:
+          - application/json
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: schedule
+          in: "path"
+          description: "Schedule identifier"
+          required: true
+          type: "string"
+          format: uuid
+        responses:
+          400:
+            description: "Invalid input"
+          200:
+            description: "OK"
+            schema:
+              $ref: "#/definitions/Schedule"
+      delete:
+        tags: 
+        - Schedule
+        operationId: servertck.delete_schedule
+        summary: Delete a schedule
+        parameters:
+        - name: Authorization
+          in: "header"
+          required: true
+          type: "string"
+        - name: experiment
+          in: "path"
+          description: "Experiment identifier"
+          required: true
+          type: "string"
+          format: uuid
+        - name: schedule
+          in: "path"
+          description: "Schedule identifier"
+          required: true
+          type: "string"
+          format: uuid
+        responses:
+          400:
+            description: "Invalid input"
+          204:
+            description: ""
+
+    /{organization}/{workspace}:
+      delete:
+        tags:
+        - Workspace
+        operationId: servertck.delete_user_workspace
+        summary: Delete a workspace
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: workspace
+            required: true
+            description: The workspace's name
+            type: string
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user"
+
+    /{organization}/{workspace}/collaborators:
+      get:
+        tags:
+        - Workspace
+        operationId: servertck.get_workspace_collaborators
+        summary: The workspace's collaborators
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: workspace
+            required: true
+            description: The workspace's name
+            type: string
+
+        responses:
+          200:
+            description: "The collaborators information"
+            schema:
+              $ref: "#/definitions/Users"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+      post:
+        tags:
+        - Workspace
+        operationId: servertck.add_workspace_collaborator
+        summary: Add a new collaborator to a workspace
+        consumes:
+          - application/json
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: workspace
+            required: true
+            description: The workspace's name
+            type: string
+          - in: body
+            name: user
+            required: true
+            description: User's identifier
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+        responses:
+          200:
+            description: "The workspace collaborator information"
+            schema:
+              $ref: "#/definitions/User"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+    /{organization}/{workspace}/collaborators/{user}:
+      delete:
+        tags:
+        - Workspace
+        operationId: servertck.delete_workspace_collaborator
+        summary: Deete a collaborator from a workspace
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: workspace
+            required: true
+            description: The workspace's name
+            type: string
+          - in: path
+            name: user
+            required: true
+            description: The user's identifier
+            type: string
+            format: uuid
+        responses:
+          200:
+            description: "The workspace collaborator information"
+            schema:
+              $ref: "#/definitions/User"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+      patch:
+        tags:
+        - Workspace
+        operationId: servertck.patch_workspace_collaborator
+        summary: Patch a collaborator's membership for this workspace (owner/collaborator)
+        consumes:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: path
+            name: organization
+            required: true
+            description: The organization's name
+            type: string
+          - in: path
+            name: workspace
+            required: true
+            description: The workspace's name
+            type: string
+          - in: path
+            name: user
+            required: true
+            description: The user's identifier
+            type: string
+            format: uuid
+          - in: body
+            name: is_owner
+            required: true
+            description: Turn user from/to an owner
+            schema:
+              type: object
+              properties:
+                workspace_owner:
+                  type: boolean
+        responses:
+          204:
+            description: ""
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+
+    /lookup/users:
+      get:
+        tags:
+        - Search
+        operationId: servertck.lookup_members
+        summary: Lookup users
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: query
+            name: q
+            required: true
+            description: A user's name pattern
+            type: string
+          - in: query
+            name: organization
+            required: false
+            description: Search only within this organization
+            type: string
+            format: uuid
+          - in: query
+            name: workspace
+            required: false
+            description: Search only within this workspace
+            type: string
+            format: uuid
+
+        responses:
+          200:
+            description: "The matched members information"
+            schema:
+              $ref: "#/definitions/Users"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+    /lookup/experiments:
+      get:
+        tags:
+        - Search
+        operationId: servertck.lookup_experiments
+        summary: Lookup experiments
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: query
+            name: q
+            required: true
+            description: An experiment's title pattern
+            type: string
+          - in: query
+            name: organization
+            required: false
+            description: Search only within this organization
+            type: string
+            format: uuid
+          - in: query
+            name: workspace
+            required: false
+            description: Search only within this workspace
+            type: string
+            format: uuid
+          - in: query
+            name: user
+            required: false
+            description: Search only withn this user's experiments
+            type: string
+            format: uuid
+          - in: query
+            name: tags
+            required: false
+            description: Search only experiments matching the union of those tags
+            type: array
+            items:
+              type: string
+
+        responses:
+          200:
+            description: "The matched members information"
+            schema:
+              $ref: "#/definitions/Users"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+    /lookup/organizations:
+      get:
+        tags:
+        - Search
+        operationId: servertck.lookup_organizations
+        summary: Lookup organizations
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: query
+            name: q
+            required: true
+            description: A organization's name pattern
+            type: string
+            format: uuid
+          - in: query
+            name: user
+            required: false
+            description: Search only within this user's organizations
+            type: string
+
+        responses:
+          200:
+            description: "The matched organizations information"
+            schema:
+              $ref: "#/definitions/Organizations"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization"
+
+    /lookup/workspaces:
+      get:
+        tags:
+        - Search
+        operationId: servertck.lookup_workspaces
+        summary: Lookup workspaces
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: query
+            name: q
+            required: true
+            description: A workspace's name pattern
+            type: string
+          - in: query
+            name: organization
+            required: false
+            description: Search only within this organization
+            type: string
+            format: uuid
+
+        responses:
+          200:
+            description: "The matched workspaces information"
+            schema:
+              $ref: "#/definitions/Workspaces"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+    /lookup/schedules:
+      get:
+        tags:
+        - Search
+        operationId: servertck.lookup_schedules
+        summary: Lookup schedules
+        produces:
+          - application/json
+        parameters:
+          - name: Authorization
+            in: "header"
+            required: true
+            description: User's credentials as a bearer token
+            type: "string"
+          - in: query
+            name: organization
+            required: false
+            description: Search only within this organization
+            type: string
+            format: uuid
+          - in: query
+            name: workspace
+            required: false
+            description: Search only within this workspace
+            type: string
+            format: uuid
+          - in: query
+            name: experiment
+            required: false
+            description: Search matching only this experiment's schedules
+            type: string
+            format: uuid
+          - in: query
+            name: start
+            required: false
+            description: Schedules starting after this date
+            type: string
+            format: date-time
+          - in: query
+            name: end
+            required: false
+            description: Schedules ending after this date
+            type: string
+            format: date-time
+
+        responses:
+          200:
+            description: "The matched workspaces information"
+            schema:
+              $ref: "#/definitions/Schedules"
+          400:
+            description: "Not signed-in"
+          404:
+            description: "Unknown user, organization or workspace"
+
+  definitions:
+    Users:
+      type: array
+      items:
+        $ref: "#/definitions/User"
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        joined:
+          type: string
+          format: date-time
+        org:
           type: object
-      responses:
-        405:
-          description: "Invalid input"
-        200:
-          description: Experiment updated
-        201:
-          description: New experiment created
+          properties:
+            name:
+              type: string
+        profile:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            name:
+              type: string
+    UserProfile:
+      type: object
+      properties:
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        bio:
+          type: string
+        company:
+          type: string
+    AccessTokens:
+      type: array
+      items:
+        $ref: "#/definitions/AccessToken"
+    AccessToken:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+        scope:
+          type: string
+        expires:
+          type: string
+          format: date-time
+        issued:
+          type: string
+          format: date-time
+        last_used:
+          type: string
+          format: date-time
+        type:
+          type: string
+          default: bearer
+        revoked:
+          type: boolean
+    Organizations:
+      type: array
+      items:
+        $ref: "#/definitions/Organization"
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        created:
+          type: string
+          format: date-time
+        workspaces:
+          $ref: "#/definitions/Workspaces"
+    OrganizationSettings:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        url:
+          type: string
+          format: url
+        description:
+          type: string
+    Workspaces:
+      type: array
+      items:
+        $ref: "#/definitions/Workspace"
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created:
+          type: string
+          format: date-time
+        visibility:
+          $ref: "#/definitions/ActivityVisibility"
+    ActivityVisibility:
+      type: object
+      properties:
+        experiment:
+          type: string
+          enum:
+          - anonymous
+          - authenticated
+          - collaborator
+          - owner
+        execution:
+          type: string
+          enum:
+          - anonymous
+          - authenticated
+          - collaborator
+          - owner
+    Schedules:
+      type: array
+      items:
+        $ref: "#/definitions/Schedules"
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        org:
+          type: string
+          format: uuid
+        workspace:
+          type: string
+          format: uuid
+        experiment:
+          type: string
+          format: uuid
+        token:
+          type: string
+          format: uuid
+        scheduled:
+          type: string
+          format: date-time
+        definition:
+          type: object
+        info:
+          type: object
+    Executions:
+      type: array
+      items:
+        $ref: "#/definitions/Executions"
+    Execution:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        org:
+          type: string
+          format: uuid
+        workspace:
+          type: string
+          format: uuid
+        created:
+          type: string
+          format: date-time
+        status:
+          type: string
+        experiment:
+          $ref: "#/definitions/Experiment"
+    Experiments:
+      type: array
+      items:
+        $ref: "#/definitions/Experiment"
+    Experiment:
+      type: object
+      required:
+        - id
+        - org
+        - workspace
+        - payload
+      properties:
+        id:
+          type: string
+          format: uuid
+        user:
+          type: string
+          format: uuid
+        org:
+          type: string
+          format: uuid
+        workspace:
+          type: string
+          format: uuid
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          description: The actual content of the experiment
