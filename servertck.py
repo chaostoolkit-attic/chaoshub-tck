@@ -1,95 +1,218 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from datetime import datetime, timedelta
 import logging
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
+import uuid
 
 import connexion
 from connexion import NoContent
+from flask import redirect
+from swagger_ui_bundle import swagger_ui_3_path
 
 
-def signup_local(user: Dict[str, str]) -> Union[object, int]:
-    return NoContent, 201
-
-
-def signin_local(user: Dict[str, str]) -> Union[object, int]:
-    return NoContent, 201
-
-
-def authorize_signin_with_oauth2(user: Dict[str, str]) -> Union[object, int]:
-    return NoContent, 201
-
-
-def authorize_signup_with_oauth2(user: Dict[str, str]) -> Union[object, int]:
-    return NoContent, 201
-
-
-def allowed_via_oauth2(user: Dict[str, str]) -> Union[object, int]:
-    return NoContent, 201
-
-
-def put_experiment(organisation, workspace):
-    journal = connexion.request.json
-    print("Invoked put handler with Org:{org} and Workspace:{ws}".format(
-        org=organisation, ws=workspace
-    ))
-
-    bearer_token = connexion.request.headers["Authorization"]
-    print("Supplied user bearer token was {token}".format(
-        token=bearer_token))
-
-    journal = connexion.request.json
-    print("Supplied journal was {journal}".format(journal=journal))
-
-    return NoContent, 200
-
-
-def get_account_profile():
+###############################################################################
+# Access Tokens
+###############################################################################
+def create_token():
     pass
 
 
-def post_account_profile():
+def get_token():
     pass
 
 
-def get_account_tokens():
+def get_tokens():
     pass
 
 
-def post_account_token():
-    pass
-
-def delete_account_token():
-    pass
-
-def get_account_orgs():
+def list_tokens():
     pass
 
 
-def post_account_org():
+def delete_token():
+    pass
+
+###############################################################################
+# Organizations
+###############################################################################
+def create_org():
     pass
 
 
-def get_account_workspaces():
+def get_org():
     pass
 
 
-def post_account_workspace():
+def get_orgs():
     pass
 
 
-def create_organization(name: str, email: str = "", url: str = "",
-                        avatar_url: str = "") -> Union[Dict[str, Any], int]:
-    return {}, 200
-    
+def list_orgs():
+    pass
 
 
-logging.basicConfig(level=logging.INFO)
-app = connexion.App(__name__, specification_dir='chaoshubtck/chaoshubserver/')
-app.add_api('chaoshubserver.yaml')
-# set the WSGI application callable to allow using uWSGI:
-# uwsgi --http :8080 -w app
-application = app.app
+def delete_org():
+    pass
+
+
+def get_org_workspaces():
+    pass
+
+
+def link_workspace_to_org():
+    pass
+
+
+def unlink_workspace_from_org():
+    pass
+
+
+###############################################################################
+# Workspaces
+###############################################################################
+def create_workspace():
+    pass
+
+
+def get_workspace():
+    pass
+
+
+def get_workspace_experiments():
+    pass
+
+
+def get_workspaces():
+    pass
+
+
+def list_workspaces():
+    pass
+
+
+def delete_workspace():
+    pass
+
+
+###############################################################################
+# Experiments
+###############################################################################
+def upload_experiment():
+    pass
+
+
+def get_experiment():
+    pass
+
+
+def delete_experiment():
+    pass
+
+
+def get_experiment_executions():
+    pass
+
+
+def get_experiment_policy():
+    pass
+
+
+def set_experiment_policy():
+    pass
+
+
+def get_experiment_schedulings():
+    pass
+
+
+###############################################################################
+# Executions
+###############################################################################
+def upload_execution():
+    pass
+
+
+def get_execution():
+    pass
+
+
+def get_execution_journal():
+    pass
+
+
+def get_execution_report():
+    pass
+
+
+def delete_execution():
+    pass
+
+
+###############################################################################
+# Scheduling
+###############################################################################
+def create_scheduling():
+    pass
+
+
+def get_scheduling():
+    pass
+
+
+def get_schedulings():
+    pass
+
+
+def delete_scheduling():
+    pass
+
+
+def get_scheduling_status():
+    pass
+
+
+def set_scheduling_status():
+    pass
+
+
+def get_scheduling_executions():
+    pass
+
+
+def get_scheduling_status_history():
+    pass
+
+
+
+###############################################################################
+# Policy
+###############################################################################
+def create_policy():
+    pass
+
+
+def get_policy():
+    pass
+
+
+def get_policies():
+    pass
+
+
+def delete_policy():
+    pass
+
+
+def run():
+    options = {'swagger_path': swagger_ui_3_path}
+
+    logging.basicConfig(level=logging.DEBUG)
+    app = connexion.App(
+        __name__, specification_dir='chaoshubtck/chaoshubserver/',
+        options=options)
+    app.add_api('chaoshubserver.yaml')
+    app.run(port=8081, server='tornado')
+
 
 if __name__ == '__main__':
-    # run our standalone gevent server
-    app.run(port=8081, server='gevent')
+    run()

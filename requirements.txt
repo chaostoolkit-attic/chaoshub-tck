@@ -1,5 +1,6 @@
 chaostoolkit-lib>=0.18.0
 chaostoolkit>=0.10.0
 connexion
-gevent
+tornado
 httpie
+pickledb
