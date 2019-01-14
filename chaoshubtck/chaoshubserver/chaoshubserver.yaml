@@ -119,12 +119,12 @@ paths:
           source: |
             import requests
             
-            token = "YOUR TOKEN"
+            bearer_token = "..."
 
             response = requests.get(
               "https://localhost:8080/api/v1/auth/tokens",
               headers={
-                "Authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {bearer_token}",
                 "Accept": "application/json"
               }
             )
@@ -177,13 +177,13 @@ paths:
           source: |
             import requests
             
-            token = "YOUR TOKEN"
+            bearer_token = "..."
             user_id = "USER ID UUID"
 
             response = requests.post(
               "https://localhost:8080/api/v1/auth/tokens",
               headers={
-                "Authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {bearer_token}",
                 "Accept": "application/json"
                 "Content-Type": "application/json"
               },
@@ -211,6 +211,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessToken'
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl -H "Authorization: Bearer TOKEN" \
+              -H "Accept: application/json" \
+              "https://localhost:8080/api/v1/auth/tokens/TOKEN_UUID"
+        - lang: 'Python'
+          source: |
+            import requests
+            
+            bearer_token = "..."
+            token_uuid = ""
+
+            response = requests.get(
+              f"https://localhost:8080/api/v1/auth/tokens/{token_uuid}",
+              headers={
+                "Authorization": f"Bearer {bearer_token}",
+                "Accept": "application/json"
+              }
+            )
+
+            token = response.json()
     delete:
       tags:
         - Authorization
@@ -223,6 +245,26 @@ paths:
           description: Unauthenticated
         '204':
           description:  The access token is deleted
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl -XDELETE -H "Authorization: Bearer TOKEN" \
+              -H "Accept: application/json" \
+              "https://localhost:8080/api/v1/auth/tokens/TOKEN_UUID"
+        - lang: 'Python'
+          source: |
+            import requests
+            
+            bearer_token = "..."
+            token_uuid = ""
+
+            response = requests.delete(
+              f"https://localhost:8080/api/v1/auth/tokens/{token_uuid}",
+              headers={
+                "Authorization": f"Bearer {bearer_token}",
+                "Accept": "application/json"
+              }
+            )
 
   /organizations:
     get:
