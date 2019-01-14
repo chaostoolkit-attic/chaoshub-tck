@@ -109,6 +109,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessTokens'
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl -H "Authorization: Bearer TOKEN" -H "Accept: application/json" "https://localhost:8080/api/v1/auth/tokens"
+        - lang: 'Python 3'
+          source: |
+            import requests
+            
+            token = "YOUR TOKEN"
+
+            requests.get(
+              "https://localhost:8080/api/v1/auth/tokens",
+              headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json"
+              }
+            )
     post:
       tags:
         - Authorization
