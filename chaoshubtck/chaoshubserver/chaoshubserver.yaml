@@ -162,6 +162,38 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NewAccessToken'
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl -X POST -H "Authorization: Bearer TOKEN" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d '{
+                  "name": "my-new-token",
+                  "user_id": "USER_ID_UUID"
+              }' \
+              "https://localhost:8080/api/v1/auth/tokens"
+        - lang: 'Python'
+          source: |
+            import requests
+            
+            token = "YOUR TOKEN"
+            user_id = "USER ID UUID"
+
+            response = requests.post(
+              "https://localhost:8080/api/v1/auth/tokens",
+              headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json"
+                "Content-Type": "application/json"
+              },
+              json={
+                "name": "my-new-token",
+                "user_id": f"{user_id}"
+              }
+            )
+
+            token = response.json()
   /auth/tokens/{token_id}:
     get:
       tags:
